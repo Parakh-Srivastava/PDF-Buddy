@@ -77,17 +77,18 @@ class VectorStore:
 
     # ---------- retrieve ----------
     def query(self, collection_name: str, question: str, k: int = 5):
-        """Return list of (chunk_text, metadata) tuples."""
+        """Return list of (chunk_text, metadata, distance) tuples."""
         collection = self.client.get_collection(collection_name)
         q_vec = self._embed(question)
         result = collection.query(
             query_embeddings=[q_vec],
             n_results=k,
-            include=["documents", "metadatas"],
+            include=["documents", "metadatas", "distances"],
         )
-        docs = result["documents"][0]
-        metas = result["metadatas"][0]
-        return list(zip(docs, metas))
+        docs = result.get("documents", [[]])[0]
+        metas = result.get("metadatas", [[]])[0]
+        dists = result.get("distances", [[]])[0] if "distances" in result and result["distances"] else [0.0] * len(docs)
+        return list(zip(docs, metas, dists))
 
     def count(self, collection_name: str) -> int:
-        return self.client.get_collection(collection_name).count()
+        return self.client.get_collection(collection_name).count()
